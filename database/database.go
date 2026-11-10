@@ -67,3 +67,35 @@ func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 
 	return solve[0].DURATION_NS, nil
 }
+
+func GetLastTenSolves(database *sql.DB) ([]Solves, error) {
+	var solves []Solves
+
+	query := `
+		SELECT id, cube_type, scramble, duration_ns, timestamp_unix_nano
+		FROM cube_timer.solves
+		ORDER BY timestamp_unix_nano
+		LIMIT 10
+	`
+
+	row, err := database.Query(query)
+	if err != nil {
+		return solves, err
+	}
+
+	for row.Next() {
+		var s Solves
+		err := row.Scan(&s.ID, &s.CUBE_TYPE, &s.SCRAMBLE, &s.DURATION_NS, &s.TIMESTAMP_UNIX_NANO)
+		if err != nil {
+			return solves, err
+		}
+
+		if row.Err() != nil {
+			return solves, err
+		}
+
+		solves = append(solves, s)
+	}
+
+	return solves, nil
+}

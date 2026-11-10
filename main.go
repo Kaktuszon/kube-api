@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"kube-api/config"
@@ -38,6 +39,19 @@ func main() {
 		time, _ := database.GetFastestTime(db, cube_type)
 		fmt.Println(time)
 		fmt.Fprintf(w, "%d", time)
+	})
+
+	mux.HandleFunc("GET /api/getlasttensolves", func(w http.ResponseWriter, r *http.Request) {
+		solves, err := database.GetLastTenSolves(db)
+		if err != nil {
+			fmt.Println("Could not get last ten solves")
+		}
+
+		jsondata, err := json.Marshal(solves)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Fprintf(w, "%s", string(jsondata))
 	})
 
 	serveraddress := fmt.Sprintf("%s:%d", cfg.SERVER.HOSTNAME, cfg.SERVER.PORT)
