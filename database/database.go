@@ -74,7 +74,7 @@ func GetLastTenSolves(database *sql.DB) ([]Solves, error) {
 	query := `
 		SELECT id, cube_type, scramble, duration_ns, timestamp_unix_nano
 		FROM cube_timer.solves
-		ORDER BY timestamp_unix_nano
+		ORDER BY timestamp_unix_nano DESC
 		LIMIT 10
 	`
 
