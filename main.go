@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"kube-api/config"
 	"kube-api/database"
 	"net/http"
 	"os"
@@ -13,7 +15,17 @@ var SERVER_HOSTNAME = os.Getenv("SERVER_HOSTNAME")
 var SERVER_PORT = os.Getenv("SERVER_PORT")
 
 func main() {
-	db := database.Connect()
+	// Load config, parse the -path flag
+	configPath := flag.String("path", "", "Path to config file, if empty ~/.kopierare/config.yaml")
+	flag.Parse()
+	cfg, err := config.LoadConfig(*configPath)
+	if err != nil {
+		fmt.Println("Could not load config, exiting...")
+		fmt.Printf("Error: %s", err)
+		os.Exit(1)
+	}
+
+	db := database.Connect(cfg)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +40,7 @@ func main() {
 		fmt.Fprintf(w, "%d", time)
 	})
 
-	serveraddress := fmt.Sprintf("%s:%s", SERVER_HOSTNAME, SERVER_PORT)
+	serveraddress := fmt.Sprintf("%s:%d", cfg.SERVER.HOSTNAME, cfg.SERVER.PORT)
 	if err := http.ListenAndServe(serveraddress, mux); err != nil {
 		fmt.Println(err)
 	}

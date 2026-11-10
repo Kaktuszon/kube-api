@@ -3,16 +3,10 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"os"
+	"kube-api/config"
 
 	_ "github.com/lib/pq"
 )
-
-var host string = os.Getenv("DB_HOSTNAME")
-var port int = 5432
-var user string = os.Getenv("DB_USERNAME")
-var password string = os.Getenv("DB_PASSWORD")
-var dbname string = os.Getenv("DB_DBNAME")
 
 type Solves struct {
 	ID                  int
@@ -22,11 +16,8 @@ type Solves struct {
 	TIMESTAMP_UNIX_NANO int
 }
 
-func Connect() *sql.DB {
-	if host == "" {
-		host = "localhost"
-	}
-	connectionString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+func Connect(cfg config.Config) *sql.DB {
+	connectionString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.DATABASE.HOSTNAME, cfg.DATABASE.PORT, cfg.DATABASE.USERNAME, cfg.DATABASE.PASSWORD, cfg.DATABASE.DATABASE)
 	db, err := sql.Open("postgres", connectionString)
 
 	if err != nil {
@@ -39,7 +30,7 @@ func Connect() *sql.DB {
 	if err != nil {
 		fmt.Printf("Failed to PING: %v\n", err)
 	}
-	fmt.Printf("Connected to database %s\n", host)
+	fmt.Printf("Connected to database %s\n", cfg.DATABASE.HOSTNAME)
 
 	return db
 }
