@@ -13,9 +13,6 @@ var port int = 5432
 var user string = os.Getenv("DB_USERNAME")
 var password string = os.Getenv("DB_PASSWORD")
 var dbname string = os.Getenv("DB_DBNAME")
-var serverhost string = os.Getenv("SERVER_HOSTNAME")
-var serverport string = "8080"
-var serveraddress string
 
 type Solves struct {
 	ID                  int
@@ -29,10 +26,6 @@ func Connect() *sql.DB {
 	if host == "" {
 		host = "localhost"
 	}
-	if serverhost == "" {
-		serverhost = "localhost"
-	}
-	serveraddress = serverhost + ":" + serverport
 	connectionString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	db, err := sql.Open("postgres", connectionString)
 
@@ -54,12 +47,13 @@ func Connect() *sql.DB {
 func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 	var solve []Solves
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, cube_type, scramble, duration_ns, timestamp_unix_nano
 		FROM cube_timer.solves
+		WHERE cube_type = '%s'
 		ORDER BY duration_ns
 		LIMIT 1
-	`
+	`, cubeType)
 
 	row, err := database.Query(query)
 	if err != nil {
@@ -70,6 +64,10 @@ func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 		var s Solves
 		err := row.Scan(&s.ID, &s.CUBE_TYPE, &s.SCRAMBLE, &s.DURATION_NS, &s.TIMESTAMP_UNIX_NANO)
 		if err != nil {
+			return 0, err
+		}
+
+		if row.Err() != nil {
 			return 0, err
 		}
 
