@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"kube-api/config"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -24,7 +25,6 @@ func Connect(cfg config.Config) *sql.DB {
 		fmt.Println("Failed to connect")
 		fmt.Println(err)
 	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -39,12 +39,12 @@ func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 	stmt, err := database.Prepare(`
 		SELECT id, cube_type, scramble, duration_ns, timestamp_unix_nano
 		FROM cube_timer.solves
-		WHERE cube_type = '?'
+		WHERE cube_type = ?
 		ORDER BY duration_ns
 		LIMIT 1
 	`)
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 	defer stmt.Close()
 
@@ -52,7 +52,7 @@ func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 	err = stmt.QueryRow(cubeType).Scan(&solve.ID, &solve.CUBE_TYPE, &solve.SCRAMBLE, &solve.DURATION_NS, &solve.TIMESTAMP_UNIX_NANO)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return 0, err
+			return -1, err
 		}
 	}
 
@@ -88,4 +88,36 @@ func GetLastTenSolves(database *sql.DB) ([]Solves, error) {
 	}
 
 	return solves, nil
+}
+
+func GetTodayAverage(database *sql.DB, cubeType string) (int, error) {
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).UnixNano()
+
+	fmt.Println(today)
+
+	stmt, err := database.Prepare(`
+		SELECT AVG(duration_ns)::bigint
+		FROM cube_timer.solves
+		WHERE cube_type = $1
+		AND timestamp_unix_nano >= $2
+	`)
+	if err != nil {
+		return -1, err
+	}
+	defer stmt.Close()
+
+	var average sql.NullInt64
+	err = stmt.QueryRow(cubeType, today).Scan(&average)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return -1, err
+		}
+	}
+
+	if !average.Valid {
+		return -1, fmt.Errorf("No valid average for today")
+	}
+
+	return int(average.Int64), nil
 }

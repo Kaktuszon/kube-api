@@ -35,13 +35,13 @@ func main() {
 
 	mux.HandleFunc("GET /api/fastest/{cube_type}", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		cube_type := path[len("/api/fastest/"):]
-		time, _ := database.GetFastestTime(db, cube_type)
+		cubeType := path[len("/api/fastest/"):]
+		time, _ := database.GetFastestTime(db, cubeType)
 		fmt.Println(time)
 		fmt.Fprintf(w, "%d", time)
 	})
 
-	mux.HandleFunc("GET /api/getlasttensolves", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/lasttensolves", func(w http.ResponseWriter, r *http.Request) {
 		solves, err := database.GetLastTenSolves(db)
 		if err != nil {
 			fmt.Println("Could not get last ten solves")
@@ -52,6 +52,16 @@ func main() {
 			fmt.Println(err)
 		}
 		fmt.Fprintf(w, "%s", string(jsondata))
+	})
+
+	mux.HandleFunc("GET /api/todayAverage/{cube_type}", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		cubeType := path[len("/api/todayAverage/"):]
+		average, err := database.GetTodayAverage(db, cubeType)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Fprintf(w, "%d", average)
 	})
 
 	serveraddress := fmt.Sprintf("%s:%d", cfg.SERVER.HOSTNAME, cfg.SERVER.PORT)
