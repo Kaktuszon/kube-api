@@ -24,7 +24,7 @@ func Connect(cfg config.Config) *sql.DB {
 		fmt.Println("Failed to connect")
 		fmt.Println(err)
 	}
-	// defer db.Close()
+	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -36,36 +36,27 @@ func Connect(cfg config.Config) *sql.DB {
 }
 
 func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
-	var solve []Solves
-
-	query := fmt.Sprintf(`
+	stmt, err := database.Prepare(`
 		SELECT id, cube_type, scramble, duration_ns, timestamp_unix_nano
 		FROM cube_timer.solves
-		WHERE cube_type = '%s'
+		WHERE cube_type = '?'
 		ORDER BY duration_ns
 		LIMIT 1
-	`, cubeType)
-
-	row, err := database.Query(query)
+	`)
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
-	for row.Next() {
-		var s Solves
-		err := row.Scan(&s.ID, &s.CUBE_TYPE, &s.SCRAMBLE, &s.DURATION_NS, &s.TIMESTAMP_UNIX_NANO)
-		if err != nil {
+	var s Solves
+	err = stmt.QueryRow(cubeType).Scan(&s.ID, &s.CUBE_TYPE, &s.SCRAMBLE, &s.DURATION_NS, &s.TIMESTAMP_UNIX_NANO)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return 0, err
 		}
-
-		if row.Err() != nil {
-			return 0, err
-		}
-
-		solve = append(solve, s)
 	}
 
-	return solve[0].DURATION_NS, nil
+	return s.DURATION_NS, nil
 }
 
 func GetLastTenSolves(database *sql.DB) ([]Solves, error) {
@@ -82,16 +73,15 @@ func GetLastTenSolves(database *sql.DB) ([]Solves, error) {
 	if err != nil {
 		return solves, err
 	}
+	defer row.Close()
 
 	for row.Next() {
 		var s Solves
 		err := row.Scan(&s.ID, &s.CUBE_TYPE, &s.SCRAMBLE, &s.DURATION_NS, &s.TIMESTAMP_UNIX_NANO)
 		if err != nil {
-			return solves, err
-		}
-
-		if row.Err() != nil {
-			return solves, err
+			if row.Err() != nil {
+				return solves, err
+			}
 		}
 
 		solves = append(solves, s)
