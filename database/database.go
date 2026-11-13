@@ -39,7 +39,7 @@ func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 	stmt, err := database.Prepare(`
 		SELECT id, cube_type, scramble, duration_ns, timestamp_unix_nano
 		FROM cube_timer.solves
-		WHERE cube_type = ?
+		WHERE cube_type = $1
 		ORDER BY duration_ns
 		LIMIT 1
 	`)
