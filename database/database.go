@@ -48,15 +48,15 @@ func GetFastestTime(database *sql.DB, cubeType string) (int, error) {
 	}
 	defer stmt.Close()
 
-	var s Solves
-	err = stmt.QueryRow(cubeType).Scan(&s.ID, &s.CUBE_TYPE, &s.SCRAMBLE, &s.DURATION_NS, &s.TIMESTAMP_UNIX_NANO)
+	var solve Solves
+	err = stmt.QueryRow(cubeType).Scan(&solve.ID, &solve.CUBE_TYPE, &solve.SCRAMBLE, &solve.DURATION_NS, &solve.TIMESTAMP_UNIX_NANO)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, err
 		}
 	}
 
-	return s.DURATION_NS, nil
+	return solve.DURATION_NS, nil
 }
 
 func GetLastTenSolves(database *sql.DB) ([]Solves, error) {
