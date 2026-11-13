@@ -54,9 +54,9 @@ func main() {
 		fmt.Fprintf(w, "%s", string(jsondata))
 	})
 
-	mux.HandleFunc("GET /api/todayAverage/{cube_type}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/todayaverage/{cube_type}", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		cubeType := path[len("/api/todayAverage/"):]
+		cubeType := path[len("/api/todayaverage/"):]
 		average, err := database.GetTodayAverage(db, cubeType)
 		if err != nil {
 			fmt.Println(err)
